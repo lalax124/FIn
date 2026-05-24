@@ -1,12 +1,13 @@
 import os
 import json
 import google.generativeai as genai
+import streamlit as st
 
+GOOGLE_API_KEY = st.secrets.get("GOOGLE_API_KEY") or os.getenv("GOOGLE_API_KEY")
 # ── API KEY ───────────────────────────────────────────────────────────────────
 # BUG FIX: original raised ValueError at import time if key missing —
 # crashed the entire app before Streamlit could even render.
 # Now falls back gracefully so users see the UI and a helpful error message.
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
 
 _model = None
 
