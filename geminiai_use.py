@@ -22,7 +22,7 @@ def _get_model():
         )
     genai.configure(api_key=GOOGLE_API_KEY)
     _model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
+        model_name="gemini-2.0-flash",
         generation_config={
             "temperature": 0.7,
             "top_p": 1,
