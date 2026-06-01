@@ -25,7 +25,7 @@ from database import (
     get_user_insights,
 )
 
-
+# ── PAGE CONFIG ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Artha - AI-Powered Financial Assistant",
     page_icon="💰",
@@ -33,7 +33,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── CUSTOM STYLE 
+# ── CUSTOM STYLE ──────────────────────────────────────────────────────────────
 def apply_custom_style():
     st.markdown("""
     <style>
@@ -46,7 +46,6 @@ def apply_custom_style():
         -webkit-text-fill-color: transparent;
         display: inline-block;
     }
-    /* Chat bubbles */
     .chat-user {
         background: #4169E1; color: white;
         padding: 10px 16px; border-radius: 18px 18px 4px 18px;
@@ -79,12 +78,14 @@ def apply_custom_style():
     </style>
     """, unsafe_allow_html=True)
 
-# ── INIT 
+# ── INIT ──────────────────────────────────────────────────────────────────────
 initialize_database()
 apply_custom_style()
 
-from groq_ai import  (generate_financial_adivice, investement_advise, analyze_budget,
 
+from groq_ai import generate_financial_adivice, investement_advise, analyze_budget
+
+from data_processing import (
     format_currency,
     calculate_budget_summary,
     calculate_investment_returns,
@@ -108,7 +109,7 @@ from moneyanalyser import (
     analyze_mortgage_affordability,
 )
 
-# ── SESSION STATE 
+# ── SESSION STATE ─────────────────────────────────────────────────────────────
 defaults = {
     "income": 0.0,
     "expenses": {},
@@ -125,11 +126,11 @@ for key, val in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = val
 
-
+# ── HEADER ────────────────────────────────────────────────────────────────────
 st.markdown('<h1><span class="gradient-text">Artha</span>: Your AI Financial Assistant</h1>', unsafe_allow_html=True)
 st.markdown('<p style="font-size:1.1em; color:#555; font-style:italic;">Make smarter financial decisions with AI-powered insights</p>', unsafe_allow_html=True)
 
-# ── AUTH 
+# ── AUTH ──────────────────────────────────────────────────────────────────────
 if not st.session_state.authenticated:
     st.sidebar.title("User Authentication")
     auth_option = st.sidebar.radio("Choose an option:", ["Login", "Register"])
@@ -149,7 +150,6 @@ if not st.session_state.authenticated:
             st.session_state.username = username.strip()
             st.session_state.authenticated = True
 
-            # Load saved data
             st.session_state.income = get_user_income(user_id)
             st.session_state.expenses = get_user_expenses(user_id)
             st.session_state.assets = get_user_assets(user_id)
@@ -157,7 +157,7 @@ if not st.session_state.authenticated:
             st.session_state.financial_goals = get_user_financial_goals(user_id)
             st.session_state.portfolio = get_user_portfolio(user_id)
 
-            st.sidebar.success(f"Welcome{'back' if auth_option == 'Login' else ''}, {username}!")
+            st.sidebar.success(f"Welcome {'back' if auth_option == 'Login' else ''}, {username}!")
             st.rerun()
         else:
             st.sidebar.error("Please enter a username")
@@ -187,7 +187,6 @@ if st.sidebar.button("💾 Save Data"):
         save_assets(st.session_state.user_id, st.session_state.assets)
         save_liabilities(st.session_state.user_id, st.session_state.liabilities)
 
-        # BUG FIX: was st.session_state.values (wrong key) — use financial_goals
         if st.session_state.financial_goals:
             save_financial_goals(st.session_state.user_id, st.session_state.financial_goals)
 
@@ -206,9 +205,9 @@ def display_ai_advice(title, advice_text):
     st.markdown(f"### {title}")
     st.markdown(f'<div class="ai-card"><h4>🤖 AI-Generated Advice</h4>{advice_text.replace(chr(10), "<br>")}</div>', unsafe_allow_html=True)
 
-# ══════════════════════════════════════════════════════════════════════════════
+
 # DASHBOARD
-# ══════════════════════════════════════════════════════════════════════════════
+
 if page == "Dashboard":
     st.header("📊 Financial Dashboard")
 
@@ -240,7 +239,6 @@ if page == "Dashboard":
                 st.metric("Emergency Fund Coverage", f"{months_covered:.1f} months",
                           delta="✅ Good" if months_covered >= 6 else "⚠️ Build this up")
 
-        # Summary table
         if st.session_state.income > 0:
             savings = st.session_state.income - total_expenses
             df = pd.DataFrame({
@@ -260,9 +258,9 @@ if page == "Dashboard":
 
     st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-# ══════════════════════════════════════════════════════════════════════════════
+
 # BUDGET ANALYZER
-# ══════════════════════════════════════════════════════════════════════════════
+
 elif page == "Budget Analyzer":
     st.header("💰 Budget Analyzer")
 
@@ -274,7 +272,6 @@ elif page == "Budget Analyzer":
         step=1000.0,
         format="%.2f",
     )
-    # BUG FIX: was st.session_state.values = income (wrong key, caused KeyError on Save)
     st.session_state.income = income
 
     st.subheader("Monthly Expenses")
@@ -294,7 +291,6 @@ elif page == "Budget Analyzer":
     ]
 
     updated_expenses = {}
-    # Show in 2 columns for cleaner layout
     left_cats = expense_categories[:6]
     right_cats = expense_categories[6:]
     col_l, col_r = st.columns(2)
@@ -397,14 +393,12 @@ elif page == "Budget Analyzer":
             if st.session_state.user_id:
                 save_ai_insight(st.session_state.user_id, "budget_analysis", str(budget_analysis))
 
-# ══════════════════════════════════════════════════════════════════════════════
+
 # AI FINANCIAL ADVISOR
-# ══════════════════════════════════════════════════════════════════════════════
 elif page == "AI Financial Advisor":
     st.header("🤖 AI Financial Advisor")
     st.markdown("Ask me any financial question and I'll provide personalised advice based on your data.")
 
-    # ── SUGGESTED TOPICS ─────────────────────────────────────────────────────
     st.subheader("💡 Suggested Topics")
     topics = [
         "How can I improve my savings rate?",
@@ -434,7 +428,6 @@ elif page == "AI Financial Advisor":
 
     st.markdown("---")
 
-    # ── CHAT INPUT ────────────────────────────────────────────────────────────
     user_query = st.text_input("💬 Your financial question:", placeholder="e.g., How can I reduce my monthly expenses?")
     if st.button("Ask Artha →", type="primary") and user_query.strip():
         financial_context = {
@@ -452,7 +445,6 @@ elif page == "AI Financial Advisor":
         st.session_state.chat_history.append({"role": "assistant", "content": response, "timestamp": datetime.now().strftime("%H:%M")})
         st.rerun()
 
-    # ── CHAT HISTORY (proper bubble UI, not flat table) ───────────────────────
     if st.session_state.chat_history:
         st.subheader("💬 Conversation")
         for msg in st.session_state.chat_history:
