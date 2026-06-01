@@ -14,7 +14,7 @@ You give clear, concise, actionable advice on budgeting, saving, investing, and 
 Always frame your advice in the Indian financial context (rupees, Indian markets, FD/RD, SIP, PPF, NPS, etc.) when relevant.
 Be warm, practical, and direct. Avoid jargon unless you explain it."""
 
-MODEL = "llama3-70b-8192" 
+MODEL = "llama-3.3-70b-versatile"
 
 
 def _chat(messages: list[dict], max_tokens: int = 1024) -> str:
