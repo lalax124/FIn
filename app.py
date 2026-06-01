@@ -25,7 +25,7 @@ from database import (
     get_user_insights,
 )
 
-# ── PAGE CONFIG ───────────────────────────────────────────────────────────────
+
 st.set_page_config(
     page_title="Artha - AI-Powered Financial Assistant",
     page_icon="💰",
@@ -33,7 +33,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── CUSTOM STYLE (no local file dependency) ───────────────────────────────────
+# ── CUSTOM STYLE 
 def apply_custom_style():
     st.markdown("""
     <style>
@@ -79,12 +79,11 @@ def apply_custom_style():
     </style>
     """, unsafe_allow_html=True)
 
-# ── INIT ──────────────────────────────────────────────────────────────────────
+# ── INIT 
 initialize_database()
 apply_custom_style()
 
-from geminiai_use import generate_financial_adivice, investement_advise, analyze_budget
-from data_processing import (
+from groq_ai import generate_financial_adivice, investement_advise, analyze_budget (
     format_currency,
     calculate_budget_summary,
     calculate_investment_returns,
@@ -108,7 +107,7 @@ from moneyanalyser import (
     analyze_mortgage_affordability,
 )
 
-# ── SESSION STATE ─────────────────────────────────────────────────────────────
+# ── SESSION STATE 
 defaults = {
     "income": 0.0,
     "expenses": {},
@@ -125,11 +124,11 @@ for key, val in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = val
 
-# ── HEADER ────────────────────────────────────────────────────────────────────
+
 st.markdown('<h1><span class="gradient-text">Artha</span>: Your AI Financial Assistant</h1>', unsafe_allow_html=True)
 st.markdown('<p style="font-size:1.1em; color:#555; font-style:italic;">Make smarter financial decisions with AI-powered insights</p>', unsafe_allow_html=True)
 
-# ── AUTH ──────────────────────────────────────────────────────────────────────
+# ── AUTH 
 if not st.session_state.authenticated:
     st.sidebar.title("User Authentication")
     auth_option = st.sidebar.radio("Choose an option:", ["Login", "Register"])
@@ -383,7 +382,7 @@ elif page == "Budget Analyzer":
     if updated_expenses and income > 0:
         st.markdown("---")
         st.subheader("🤖 AI Budget Analysis")
-        with st.spinner("Analysing your budget with Gemini AI..."):
+        with st.spinner("Analysing your budget with Groq AI..."):
             budget_analysis = analyze_budget(income, updated_expenses)
 
             if isinstance(budget_analysis, str):
