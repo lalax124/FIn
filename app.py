@@ -83,7 +83,7 @@ def apply_custom_style():
 initialize_database()
 apply_custom_style()
 
-from groq_ai import  (generate_financial_adivice, investement_advise, analyze_budget
+from groq_ai import  (generate_financial_adivice, investement_advise, analyze_budget,
 
     format_currency,
     calculate_budget_summary,
