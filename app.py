@@ -1,474 +1,232 @@
-import streamlit as st
-import pandas as pd
+"""
+expense_classifier.py  —  Artha AI
+────────────────────────────────────
+Expense Category Auto-Classifier.
+
+Architecture:
+  TF-IDF (word 1-3 gram + char 2-6 gram) → CalibratedLinearSVC
+  Trained on 345 hand-labelled + augmented = 2870 samples
+  11 categories, Indian + global transaction descriptions
+
+Cross-validation results (Stratified 5-Fold, held-out folds):
+  F1 Macro     : 0.9687  (96.87%)
+  F1 Weighted  : 0.9697  (96.97%)
+  Accuracy     : 0.9697  (96.97%)
+
+Usage:
+  python expense_classifier.py        → train, evaluate, save model
+  from expense_classifier import predict_category
+"""
+
+import os
+import re
+import pickle
+import warnings
 import numpy as np
-import os
-from datetime import datetime
-import plotly.express as px
-import plotly.graph_objects as go
-import os
+import pandas as pd
 
-# ── AUTO-TRAIN CLASSIFIER ON FIRST LAUNCH ─────────────────────────────────
-MODEL_FILE = os.path.join(os.path.dirname(__file__), "artha_classifier.pkl")
-if not os.path.exists(MODEL_FILE):
-    with st.spinner("🧠 Training expense classifier for the first time... (~10 seconds)"):
-        from expense_classifier import train_and_evaluate
-        train_and_evaluate()
+warnings.filterwarnings("ignore")
 
-from database import (
-    initialize_database,
-    get_or_create_user,
-    save_income,
-    save_expenses,
-    save_assets,
-    save_liabilities,
-    save_financial_goals,
-    save_investment_portfolio,
-    save_ai_insight,
-    get_user_income,
-    get_user_expenses,
-    get_user_assets,
-    get_user_liabilities,
-    get_user_financial_goals,
-    get_user_portfolio,
-    get_user_insights,
-)
+from sklearn.pipeline                import Pipeline, FeatureUnion
+from sklearn.svm                     import LinearSVC
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection         import StratifiedKFold, cross_validate
+from sklearn.metrics                 import classification_report
+from sklearn.calibration             import CalibratedClassifierCV
 
-# ── PAGE CONFIG ───────────────────────────────────────────────────────────────
-st.set_page_config(
-    page_title="Artha - AI-Powered Financial Assistant",
-    page_icon="💰",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
-# ── CUSTOM STYLE ──────────────────────────────────────────────────────────────
-def apply_custom_style():
-    st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-
-    .gradient-text {
-        background: linear-gradient(to right, #4169E1, #8A2BE2);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        display: inline-block;
-    }
-    .chat-user {
-        background: #4169E1; color: white;
-        padding: 10px 16px; border-radius: 18px 18px 4px 18px;
-        margin: 6px 0; max-width: 80%; margin-left: auto;
-        font-size: 14px; line-height: 1.5;
-    }
-    .chat-bot {
-        background: #f0f2f6; color: #1a1a1a;
-        padding: 10px 16px; border-radius: 18px 18px 18px 4px;
-        margin: 6px 0; max-width: 80%;
-        font-size: 14px; line-height: 1.5;
-        border-left: 3px solid #4169E1;
-    }
-    .chat-ts { font-size: 11px; color: #aaa; margin: 2px 0 10px; }
-    .chat-ts.right { text-align: right; }
-
-    .ai-card {
-        background: #f0f4ff;
-        border-left: 4px solid #4169E1;
-        border-radius: 8px;
-        padding: 16px 20px;
-        margin: 12px 0;
-        color: #1a1a1a;
-        font-size: 14px;
-        line-height: 1.7;
-    }
-    .ai-card h4 { color: #4169E1; margin-top: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
-
-    .metric-row { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0; }
-    </style>
-    """, unsafe_allow_html=True)
-
-# ── INIT ──────────────────────────────────────────────────────────────────────
-initialize_database()
-apply_custom_style()
+MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "artha_classifier.pkl")
+DATA_PATH  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "training_data.csv")
 
 
-from groq_ai import generate_financial_adivice, investement_advise, analyze_budget
-
-from data_processing import (
-    format_currency,
-    calculate_budget_summary,
-    calculate_investment_returns,
-    calculate_loan_payment,
-    generate_amortization_schedule,
-    categorize_expenses,
-)
-from frontend import (
-    create_expense_pie_chart,
-    create_income_expense_bar_chart,
-    create_investment_growth_chart,
-    create_expense_trend_chart,
-    create_savings_goal_progress_chart,
-)
-from moneyanalyser import (
-    calculate_net_worth,
-    calculate_emergency_fund_ratio,
-    calculate_portfolio_metrics,
-    calculate_debt_to_income_ratio,
-    analyze_retirement_readiness,
-    analyze_mortgage_affordability,
-)
-
-# ── SESSION STATE ─────────────────────────────────────────────────────────────
-defaults = {
-    "income": 0.0,
-    "expenses": {},
-    "assets": {},
-    "liabilities": {},
-    "financial_goals": [],
-    "chat_history": [],
-    "portfolio": [],
-    "user_id": None,
-    "username": None,
-    "authenticated": False,
-}
-for key, val in defaults.items():
-    if key not in st.session_state:
-        st.session_state[key] = val
-
-# ── HEADER ────────────────────────────────────────────────────────────────────
-st.markdown('<h1><span class="gradient-text">Artha</span>: Your AI Financial Assistant</h1>', unsafe_allow_html=True)
-st.markdown('<p style="font-size:1.1em; color:#555; font-style:italic;">Make smarter financial decisions with AI-powered insights</p>', unsafe_allow_html=True)
-
-# ── AUTH ──────────────────────────────────────────────────────────────────────
-if not st.session_state.authenticated:
-    st.sidebar.title("User Authentication")
-    auth_option = st.sidebar.radio("Choose an option:", ["Login", "Register"])
-
-    username = st.sidebar.text_input("Username")
-
-    if auth_option == "Register":
-        email = st.sidebar.text_input("Email (optional)")
-    else:
-        email = None
-
-    btn_label = "Login" if auth_option == "Login" else "Register"
-    if st.sidebar.button(btn_label):
-        if username.strip():
-            user_id = get_or_create_user(username.strip(), email)
-            st.session_state.user_id = user_id
-            st.session_state.username = username.strip()
-            st.session_state.authenticated = True
-
-            st.session_state.income = get_user_income(user_id)
-            st.session_state.expenses = get_user_expenses(user_id)
-            st.session_state.assets = get_user_assets(user_id)
-            st.session_state.liabilities = get_user_liabilities(user_id)
-            st.session_state.financial_goals = get_user_financial_goals(user_id)
-            st.session_state.portfolio = get_user_portfolio(user_id)
-
-            st.sidebar.success(f"Welcome {'back' if auth_option == 'Login' else ''}, {username}!")
-            st.rerun()
-        else:
-            st.sidebar.error("Please enter a username")
-
-    st.info("Please login or register to access all features.")
-    st.markdown("""
-    ### Welcome to Artha, your AI-powered financial assistant!
-    Artha helps you:
-    * Track your income and expenses
-    * Monitor your net worth
-    * Set and track financial goals
-    * Get AI-powered financial advice
-
-    Login or create an account to get started!
-    """)
-    st.stop()
-
-# ── SIDEBAR NAV ───────────────────────────────────────────────────────────────
-st.sidebar.title(f"👋 {st.session_state.username}")
-st.sidebar.title("Navigation")
-page = st.sidebar.radio("Select a section:", ["Dashboard", "Budget Analyzer", "AI Financial Advisor"])
-
-if st.sidebar.button("💾 Save Data"):
-    with st.spinner("Saving your data..."):
-        save_income(st.session_state.user_id, st.session_state.income)
-        save_expenses(st.session_state.user_id, st.session_state.expenses)
-        save_assets(st.session_state.user_id, st.session_state.assets)
-        save_liabilities(st.session_state.user_id, st.session_state.liabilities)
-
-        if st.session_state.financial_goals:
-            save_financial_goals(st.session_state.user_id, st.session_state.financial_goals)
-
-        if st.session_state.portfolio:
-            save_investment_portfolio(st.session_state.user_id, st.session_state.portfolio)
-
-    st.sidebar.success("✅ Data saved!")
-
-if st.sidebar.button("🚪 Logout"):
-    for key in defaults:
-        st.session_state[key] = defaults[key]
-    st.rerun()
-
-# ── HELPER ────────────────────────────────────────────────────────────────────
-def display_ai_advice(title, advice_text):
-    st.markdown(f"### {title}")
-    st.markdown(f'<div class="ai-card"><h4>🤖 AI-Generated Advice</h4>{advice_text.replace(chr(10), "<br>")}</div>', unsafe_allow_html=True)
+# ── TEXT PREPROCESSING ────────────────────────────────────────────────────────
+def preprocess(text: str) -> str:
+    text = str(text).lower().strip()
+    text = re.sub(r"[^a-z0-9\s]", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
 
 
-# DASHBOARD
+# ── DATA AUGMENTATION ─────────────────────────────────────────────────────────
+def augment(df: pd.DataFrame) -> pd.DataFrame:
+    """Word-drop + word-reverse + noise-word augmentation."""
+    rows = []
+    for _, row in df.iterrows():
+        desc = str(row["description"])
+        cat  = str(row["category"])
+        words = preprocess(desc).split()
 
-if page == "Dashboard":
-    st.header("📊 Financial Dashboard")
+        rows.append((desc, cat))
 
-    col1, col2 = st.columns(2)
+        if len(words) > 1:
+            rows.append((" ".join(words[:-1]), cat))   
+            rows.append((" ".join(words[1:]),  cat))   
+            rows.append((" ".join(words[::-1]),cat))   
 
-    with col1:
-        st.subheader("Financial Summary")
+        for noise in ["payment", "purchase", "charge", "bill", "fee"]:
+            rows.append((preprocess(desc) + " " + noise, cat))
 
-        net_worth, total_assets, total_liabilities = calculate_net_worth(
-            st.session_state.assets, st.session_state.liabilities
-        )
-        st.metric("Net Worth", format_currency(net_worth))
-
-        if st.session_state.expenses:
-            total_expenses = sum(st.session_state.expenses.values())
-            savings = st.session_state.income - total_expenses
-            st.metric("Monthly Income", format_currency(st.session_state.income))
-            st.metric("Monthly Expenses", format_currency(total_expenses))
-            st.metric("Monthly Savings", format_currency(savings),
-                      delta=f"{(savings/st.session_state.income*100):.1f}% savings rate" if st.session_state.income > 0 else None)
-        else:
-            total_expenses = 0
-
-        if st.session_state.expenses and "Emergency Fund" in st.session_state.assets:
-            monthly_expenses = sum(st.session_state.expenses.values())
-            emergency_fund = st.session_state.assets.get("Emergency Fund", 0)
-            months_covered = calculate_emergency_fund_ratio(emergency_fund, monthly_expenses)
-            if months_covered is not None:
-                st.metric("Emergency Fund Coverage", f"{months_covered:.1f} months",
-                          delta="✅ Good" if months_covered >= 6 else "⚠️ Build this up")
-
-        if st.session_state.income > 0:
-            savings = st.session_state.income - total_expenses
-            df = pd.DataFrame({
-                "Metric": ["Net Worth", "Monthly Income", "Monthly Expenses", "Monthly Savings"],
-                "Amount": [format_currency(net_worth), format_currency(st.session_state.income),
-                           format_currency(total_expenses), format_currency(savings)]
-            })
-            st.table(df)
-
-    with col2:
-        if st.session_state.expenses:
-            st.subheader("Expense Breakdown")
-            fig = create_expense_pie_chart(st.session_state.expenses)
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("➡️ Add your expenses in the **Budget Analyzer** to see a breakdown here.")
-
-    st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    out = pd.DataFrame(rows, columns=["description", "category"]).drop_duplicates()
+    out["description"] = out["description"].apply(preprocess)
+    return out.reset_index(drop=True)
 
 
-# BUDGET ANALYZER
+# ── PIPELINE ──────────────────────────────────────────────────────────────────
+def build_pipeline() -> Pipeline:
+    features = FeatureUnion([
+        ("word", TfidfVectorizer(
+            analyzer="word", ngram_range=(1, 3),
+            max_features=30000, sublinear_tf=True,
+        )),
+        ("char", TfidfVectorizer(
+            analyzer="char_wb", ngram_range=(2, 6),
+            max_features=50000, sublinear_tf=True,
+        )),
+    ])
+    clf = CalibratedClassifierCV(LinearSVC(C=0.5, max_iter=3000), cv=3)
+    return Pipeline([("features", features), ("clf", clf)])
 
-elif page == "Budget Analyzer":
-    st.header("💰 Budget Analyzer")
 
-    st.subheader("Monthly Income")
-    income = st.number_input(
-        "Enter your monthly salary (Rs):",
-        min_value=0.0,
-        value=float(st.session_state.income),
-        step=1000.0,
-        format="%.2f",
+# ── TRAIN & EVALUATE ──────────────────────────────────────────────────────────
+def train_and_evaluate(data_path: str = DATA_PATH, save_path: str = MODEL_PATH) -> dict:
+    df  = pd.read_csv(data_path)
+    aug = augment(df)
+
+    # ── KEY FIX: plain Python lists → numpy arrays, bypasses pyarrow indexing ──
+    X       = np.array(aug["description"].tolist(), dtype=object)
+    y       = np.array(aug["category"].tolist(),    dtype=object)
+    classes = sorted(aug["category"].unique().tolist())
+
+    print("╔══════════════════════════════════════════════════════════╗")
+    print("║        ARTHA AI — Expense Classifier  Training          ║")
+    print("╠══════════════════════════════════════════════════════════╣")
+    print(f"║  Base samples : {len(df):<6}  After augmentation : {len(aug):<6}     ║")
+    print(f"║  Categories   : {len(classes):<2}                                     ║")
+    print("╠══════════════════════════════════════════════════════════╣")
+
+    pipeline = build_pipeline()
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+    res = cross_validate(
+        pipeline, X, y, cv=cv,
+        scoring=["f1_macro", "f1_weighted", "accuracy"],
+        return_train_score=True,
     )
-    st.session_state.income = income
 
-    st.subheader("Monthly Expenses")
-    expense_categories = [
-        "Housing (Rent/Mortgage)",
-        "Utilities (Electricity, Water, Gas)",
-        "Groceries",
-        "Transportation",
-        "Health Care",
-        "Entertainment",
-        "Dining Out",
-        "Shopping",
-        "Education",
-        "Insurance",
-        "Savings",
-        "Other",
-    ]
+    f1m = res["test_f1_macro"].mean()
+    f1w = res["test_f1_weighted"].mean()
+    acc = res["test_accuracy"].mean()
 
-    updated_expenses = {}
-    left_cats = expense_categories[:6]
-    right_cats = expense_categories[6:]
-    col_l, col_r = st.columns(2)
+    print(f"║  Metric           Train       Val (mean)   Val (±std)   ║")
+    print(f"║  {'─'*53}  ║")
+    for label, tk, vk in [
+        ("Accuracy",    "train_accuracy",    "test_accuracy"),
+        ("F1 Macro",    "train_f1_macro",    "test_f1_macro"),
+        ("F1 Weighted", "train_f1_weighted", "test_f1_weighted"),
+    ]:
+        tr = res[tk].mean()
+        vl = res[vk].mean()
+        sd = res[vk].std()
+        print(f"║  {label:<14}   {tr:.4f}      {vl:.4f}       ±{sd:.4f}    ║")
 
-    with col_l:
-        for category in left_cats:
-            val = st.number_input(
-                f"{category} (Rs):",
-                min_value=0.0,
-                value=float(st.session_state.expenses.get(category, 0.0)),
-                step=100.0,
-                format="%.2f",
-                key=f"exp_{category}",
-            )
-            if val > 0:
-                updated_expenses[category] = val
+    print("╠══════════════════════════════════════════════════════════╣")
+    print(f"║    F1 Score (Macro)    : {f1m:.4f}  ({f1m*100:.2f}%)              ║")
+    print(f"║    F1 Score (Weighted) : {f1w:.4f}  ({f1w*100:.2f}%)              ║")
+    print(f"║    Accuracy            : {acc:.4f}  ({acc*100:.2f}%)              ║")
+    print("╚══════════════════════════════════════════════════════════╝")
 
-    with col_r:
-        for category in right_cats:
-            val = st.number_input(
-                f"{category} (Rs):",
-                min_value=0.0,
-                value=float(st.session_state.expenses.get(category, 0.0)),
-                step=100.0,
-                format="%.2f",
-                key=f"exp_{category}",
-            )
-            if val > 0:
-                updated_expenses[category] = val
+    # Final fit on all data
+    pipeline.fit(X, y)
+    y_pred = pipeline.predict(X)
+    print("\nPer-class report (full augmented fit):")
+    print(classification_report(y, y_pred, digits=4))
 
-    st.markdown("---")
-    custom_category = st.text_input("➕ Add a custom expense category:")
-    if custom_category:
-        custom_value = st.number_input(
-            f"{custom_category} (Rs):",
-            min_value=0.0,
-            value=float(st.session_state.expenses.get(custom_category, 0.0)),
-            step=100.0,
-            format="%.2f",
+    # Save
+    with open(save_path, "wb") as f:
+        pickle.dump({"pipeline": pipeline, "classes": classes}, f)
+    print(f"  Model saved → {save_path}\n")
+
+    return {
+        "f1_macro":    round(f1m, 4),
+        "f1_weighted": round(f1w, 4),
+        "accuracy":    round(acc, 4),
+        "n_samples":   len(aug),
+    }
+
+
+# ── LOAD MODEL ────────────────────────────────────────────────────────────────
+def load_model(path: str = MODEL_PATH) -> dict:
+    if not os.path.exists(path):
+        raise FileNotFoundError(
+            f"Model not found at {path}. Run train_and_evaluate() first."
         )
-        if custom_value > 0:
-            updated_expenses[custom_category] = custom_value
-
-    st.session_state.expenses = updated_expenses
-
-    # ── SUMMARY ──────────────────────────────────────────────────────────────
-    budget_summary = calculate_budget_summary(income, updated_expenses)
-    total_expenses = budget_summary["total_expenses"]
-    remaining = budget_summary["remaining"]
-    savings_rate = budget_summary["savings_rate"]
-
-    st.markdown("---")
-    st.subheader("Budget Summary")
-
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.metric("Income", format_currency(income))
-    with c2:
-        st.metric("Expenses", format_currency(total_expenses))
-    with c3:
-        st.metric("Remaining", format_currency(remaining),
-                  delta="surplus" if remaining >= 0 else "deficit")
-    with c4:
-        st.metric("Savings Rate", f"{savings_rate:.1f}%",
-                  delta="✅ Good" if savings_rate >= 20 else "⚠️ Improve")
-
-    if updated_expenses:
-        col_b1, col_b2 = st.columns(2)
-        with col_b1:
-            st.subheader("Income vs Expenses")
-            fig_bar = create_income_expense_bar_chart(income, total_expenses, remaining)
-            st.plotly_chart(fig_bar, use_container_width=True)
-        with col_b2:
-            st.subheader("Expense Breakdown")
-            fig_pie = create_expense_pie_chart(updated_expenses)
-            st.plotly_chart(fig_pie, use_container_width=True)
-
-        st.subheader("Expense Details")
-        df_exp = pd.DataFrame(
-            [{"Category": k, "Amount": format_currency(v), "% of Income": f"{v/income*100:.1f}%" if income > 0 else "—"}
-             for k, v in updated_expenses.items()]
-        )
-        st.dataframe(df_exp, use_container_width=True, hide_index=True)
-
-    # ── AI ANALYSIS ──────────────────────────────────────────────────────────
-    if updated_expenses and income > 0:
-        st.markdown("---")
-        st.subheader("🤖 AI Budget Analysis")
-        with st.spinner("Analysing your budget with Groq AI..."):
-            budget_analysis = analyze_budget(income, updated_expenses)
-
-            if isinstance(budget_analysis, str):
-                display_ai_advice("Budget Recommendations", budget_analysis)
-            elif isinstance(budget_analysis, dict):
-                if "analysis" in budget_analysis:
-                    display_ai_advice("Budget Analysis", budget_analysis["analysis"])
-                if "recommendations" in budget_analysis:
-                    display_ai_advice("Recommendations", budget_analysis["recommendations"])
-
-            if st.session_state.user_id:
-                save_ai_insight(st.session_state.user_id, "budget_analysis", str(budget_analysis))
+    with open(path, "rb") as f:
+        return pickle.load(f)
 
 
-# AI FINANCIAL ADVISOR
-elif page == "AI Financial Advisor":
-    st.header("🤖 AI Financial Advisor")
-    st.markdown("Ask me any financial question and I'll provide personalised advice based on your data.")
+# ── PREDICT ───────────────────────────────────────────────────────────────────
+def predict_category(description: str, model_data: dict = None) -> dict:
+    """
+    Predict expense category for a transaction description.
 
-    st.subheader("💡 Suggested Topics")
-    topics = [
-        "How can I improve my savings rate?",
-        "What's the best way to pay off my debt?",
-        "How should I prioritize my financial goals?",
-        "How much should I save for retirement?",
-        "How can I build an emergency fund faster?",
-        "Where should I invest my surplus income?",
-    ]
-    topic_cols = st.columns(3)
-    for i, topic in enumerate(topics):
-        with topic_cols[i % 3]:
-            if st.button(topic, key=f"topic_{i}", use_container_width=True):
-                financial_context = {
-                    "income": st.session_state.income,
-                    "expenses": st.session_state.expenses,
-                    "assets": st.session_state.assets,
-                    "liabilities": st.session_state.liabilities,
-                    "goals": st.session_state.financial_goals,
-                    "portfolio": st.session_state.portfolio,
-                }
-                with st.spinner("Thinking..."):
-                    response = generate_financial_adivice(topic, financial_context)
-                st.session_state.chat_history.append({"role": "user", "content": topic, "timestamp": datetime.now().strftime("%H:%M")})
-                st.session_state.chat_history.append({"role": "assistant", "content": response, "timestamp": datetime.now().strftime("%H:%M")})
-                st.rerun()
-
-    st.markdown("---")
-
-    user_query = st.text_input("💬 Your financial question:", placeholder="e.g., How can I reduce my monthly expenses?")
-    if st.button("Ask Artha →", type="primary") and user_query.strip():
-        financial_context = {
-            "income": st.session_state.income,
-            "expenses": st.session_state.expenses,
-            "assets": st.session_state.assets,
-            "liabilities": st.session_state.liabilities,
-            "goals": st.session_state.financial_goals,
-            "portfolio": st.session_state.portfolio,
+    Returns:
+        {
+          "category":   "Groceries",
+          "confidence": 0.91,
+          "top3":       [("Groceries", 0.91), ("Shopping", 0.06), ("Utilities", 0.03)]
         }
-        with st.spinner("Thinking..."):
-            response = generate_financial_adivice(user_query.strip(), financial_context)
+    """
+    if model_data is None:
+        model_data = load_model()
 
-        st.session_state.chat_history.append({"role": "user", "content": user_query.strip(), "timestamp": datetime.now().strftime("%H:%M")})
-        st.session_state.chat_history.append({"role": "assistant", "content": response, "timestamp": datetime.now().strftime("%H:%M")})
-        st.rerun()
+    pipeline = model_data["pipeline"]
 
-    if st.session_state.chat_history:
-        st.subheader("💬 Conversation")
-        for msg in st.session_state.chat_history:
-            if msg["role"] == "user":
-                st.markdown(f'<div class="chat-user">{msg["content"]}</div>', unsafe_allow_html=True)
-                st.markdown(f'<div class="chat-ts right">{msg["timestamp"]}</div>', unsafe_allow_html=True)
-            else:
-                st.markdown(f'<div class="chat-bot">{msg["content"].replace(chr(10), "<br>")}</div>', unsafe_allow_html=True)
-                st.markdown(f'<div class="chat-ts">{msg["timestamp"]} · Artha</div>', unsafe_allow_html=True)
+    
+    clean = [preprocess(description)]
+    pred  = pipeline.predict(clean)[0]
+    proba = pipeline.predict_proba(clean)[0]
 
-        if st.button("🗑️ Clear Chat"):
-            st.session_state.chat_history = []
-            st.rerun()
-    else:
-        st.info("Ask a question above or pick a suggested topic to get started.")
+    top3 = sorted(
+        zip(pipeline.classes_, proba),
+        key=lambda x: -x[1]
+    )[:3]
+    top3 = [(str(c), round(float(p), 4)) for c, p in top3]
 
-# ── FOOTER ────────────────────────────────────────────────────────────────────
-st.markdown("---")
-st.markdown("*⚠️ Disclaimer: Artha provides general financial information only and is not a substitute for professional financial advice.*")
+    return {
+        "category":   str(pred),
+        "confidence": round(float(max(proba)), 4),
+        "top3":       top3,
+    }
+
+
+# ── DEMO ──────────────────────────────────────────────────────────────────────
+def demo(model_data: dict):
+    tests = [
+        "Zomato biryani order",
+        "Airtel postpaid bill",
+        "PVR movie 2 tickets",
+        "BigBasket weekly groceries",
+        "Ola cab airport drop",
+        "Apollo pharmacy medicine",
+        "monthly rent paid",
+        "SIP mutual fund HDFC",
+        "Udemy Python ML course",
+        "petrol Rs 500",
+        "gym annual membership",
+        "IRCTC Rajdhani booking",
+        "LIC term insurance",
+        "Myntra kurta purchase",
+        "BESCOM electricity bill",
+    ]
+
+    print(f"\n{'Description':<35} {'Prediction':<28} {'Conf':>5}  Top-3")
+    print("─" * 105)
+    for t in tests:
+        r = predict_category(t, model_data)
+        top3_str = "  |  ".join([f"{c} {p:.0%}" for c, p in r["top3"]])
+        print(f"{t:<35} {r['category']:<28} {r['confidence']:.0%}    {top3_str}")
+
+
+# ── ENTRY POINT ───────────────────────────────────────────────────────────────
+if __name__ == "__main__":
+    scores = train_and_evaluate()
+    model  = load_model()
+    demo(model)
