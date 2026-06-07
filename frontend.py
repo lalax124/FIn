@@ -21,8 +21,8 @@ COLORS = {
     "grid":      "rgba(255,255,255,0.08)",
     "text":      "#E8EAED",
 }
-PALETTE = ["#4169E1","#8A2BE2","#00C896","#FFA502","#FF4757",
-           "#00B4D8","#F72585","#3A86FF","#06D6A0","#FFD166"]
+PALETTE = ["#FDC8E0", "#FDC2D3", "#FECBD1", "#FCB2D4", "#F0C7DC"]
+
 
 LAYOUT_BASE = dict(
     plot_bgcolor=COLORS["bg"],
