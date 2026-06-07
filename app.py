@@ -5,6 +5,14 @@ import os
 from datetime import datetime
 import plotly.express as px
 import plotly.graph_objects as go
+import os, subprocess, sys
+
+# ── AUTO-TRAIN CLASSIFIER ON FIRST LAUNCH ─────────────────────────────────
+MODEL_FILE = os.path.join(os.path.dirname(__file__), "artha_classifier.pkl")
+if not os.path.exists(MODEL_FILE):
+    with st.spinner("🧠 Training expense classifier for the first time... (~10 seconds)"):
+        subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), "expense_classifier.py")],
+                       check=True)
 
 from database import (
     initialize_database,
