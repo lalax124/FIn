@@ -1,0 +1,346 @@
+description,category
+Zomato order,Dining Out
+Swiggy delivery,Dining Out
+McDonald's,Dining Out
+Domino's Pizza,Dining Out
+KFC order,Dining Out
+Burger King,Dining Out
+Pizza Hut,Dining Out
+Cafe Coffee Day,Dining Out
+Starbucks,Dining Out
+Barbeque Nation,Dining Out
+restaurant bill,Dining Out
+dinner at hotel,Dining Out
+lunch canteen,Dining Out
+food delivery,Dining Out
+biryani order,Dining Out
+dhabha meal,Dining Out
+chai tapri,Dining Out
+juice corner,Dining Out
+Chinese food,Dining Out
+South Indian restaurant,Dining Out
+BigBasket order,Groceries
+Blinkit grocery,Groceries
+Zepto groceries,Groceries
+DMart shopping,Groceries
+Reliance Fresh,Groceries
+More Supermarket,Groceries
+Spencer's Retail,Groceries
+Nature's Basket,Groceries
+vegetable market,Groceries
+fruit vendor,Groceries
+kirana store,Groceries
+grocery purchase,Groceries
+milk Amul,Groceries
+bread purchase,Groceries
+rice dal purchase,Groceries
+supermarket bill,Groceries
+weekly groceries,Groceries
+monthly ration,Groceries
+sabzi mandi,Groceries
+provisions store,Groceries
+house rent,Housing (Rent/Mortgage)
+monthly rent,Housing (Rent/Mortgage)
+apartment rent,Housing (Rent/Mortgage)
+PG charges,Housing (Rent/Mortgage)
+hostel fee,Housing (Rent/Mortgage)
+flat rent,Housing (Rent/Mortgage)
+rent payment,Housing (Rent/Mortgage)
+home loan EMI,Housing (Rent/Mortgage)
+mortgage payment,Housing (Rent/Mortgage)
+society maintenance,Housing (Rent/Mortgage)
+maintenance charges,Housing (Rent/Mortgage)
+housing loan,Housing (Rent/Mortgage)
+room rent,Housing (Rent/Mortgage)
+landlord payment,Housing (Rent/Mortgage)
+lease payment,Housing (Rent/Mortgage)
+Ola cab,Transportation
+Uber ride,Transportation
+Rapido bike,Transportation
+Metro card recharge,Transportation
+BMTC bus pass,Transportation
+DTC pass,Transportation
+auto rickshaw,Transportation
+petrol pump,Transportation
+diesel refill,Transportation
+fuel charge,Transportation
+car service,Transportation
+vehicle insurance,Transportation
+parking fee,Transportation
+IRCTC train ticket,Transportation
+IndiGo flight,Transportation
+Air India ticket,Transportation
+bus ticket,Transportation
+cab booking,Transportation
+bike taxi,Transportation
+toll charge,Transportation
+electricity bill,Utilities
+BESCOM bill,Utilities
+MSEB payment,Utilities
+water bill,Utilities
+gas cylinder,Utilities
+Indane gas,Utilities
+HP gas,Utilities
+internet bill,Utilities
+broadband recharge,Utilities
+Airtel bill,Utilities
+Jio recharge,Utilities
+BSNL payment,Utilities
+Vi recharge,Utilities
+phone bill,Utilities
+mobile recharge,Utilities
+DTH recharge,Utilities
+Tata Sky,Utilities
+cable TV bill,Utilities
+postpaid bill,Utilities
+utility payment,Utilities
+Apollo Pharmacy,Health Care
+Medplus pharmacy,Health Care
+doctor consultation,Health Care
+hospital bill,Health Care
+clinic visit,Health Care
+medical test,Health Care
+blood test,Health Care
+Practo appointment,Health Care
+medicine purchase,Health Care
+dental checkup,Health Care
+eye checkup,Health Care
+health insurance,Health Care
+gym membership,Health Care
+fitness subscription,Health Care
+PathLab test,Health Care
+diagnostic centre,Health Care
+physiotherapy,Health Care
+vaccination,Health Care
+surgery charges,Health Care
+nursing home,Health Care
+Netflix subscription,Entertainment
+Amazon Prime,Entertainment
+Hotstar subscription,Entertainment
+Spotify premium,Entertainment
+YouTube premium,Entertainment
+movie ticket,Entertainment
+PVR cinema,Entertainment
+INOX movies,Entertainment
+BookMyShow,Entertainment
+gaming purchase,Entertainment
+Steam games,Entertainment
+concert ticket,Entertainment
+amusement park,Entertainment
+zoo ticket,Entertainment
+event ticket,Entertainment
+PlayStation store,Entertainment
+Xbox game pass,Entertainment
+Apple TV plus,Entertainment
+ZEE5 subscription,Entertainment
+SonyLIV premium,Entertainment
+Myntra shopping,Shopping
+Flipkart order,Shopping
+Amazon purchase,Shopping
+Ajio fashion,Shopping
+Nykaa beauty,Shopping
+Meesho order,Shopping
+Snapdeal purchase,Shopping
+H&M clothing,Shopping
+Zara store,Shopping
+clothes purchase,Shopping
+footwear shopping,Shopping
+electronics purchase,Shopping
+mobile phone,Shopping
+laptop purchase,Shopping
+furniture shopping,Shopping
+home decor,Shopping
+kitchen appliances,Shopping
+gift purchase,Shopping
+accessories shopping,Shopping
+jewellery purchase,Shopping
+BYJU'S subscription,Education
+Unacademy premium,Education
+Coursera course,Education
+Udemy purchase,Education
+college fee,Education
+tuition fee,Education
+school fee,Education
+exam fee,Education
+books purchase,Education
+stationery,Education
+coaching center,Education
+certification exam,Education
+workshop fee,Education
+skill course,Education
+library membership,Education
+online class,Education
+university fee,Education
+entrance exam,Education
+test series,Education
+study material,Education
+SIP investment,Savings
+mutual fund,Savings
+PPF deposit,Savings
+NPS contribution,Savings
+RD installment,Savings
+FD deposit,Savings
+savings transfer,Savings
+emergency fund,Savings
+ELSS investment,Savings
+LIC premium,Savings
+insurance premium,Insurance
+term insurance,Insurance
+car insurance,Insurance
+health insurance premium,Insurance
+two wheeler insurance,Insurance
+bike insurance,Insurance
+general insurance,Insurance
+HDFC Life,Insurance
+SBI Life premium,Insurance
+Bajaj Allianz,Insurance
+Swiggy Instamart,Groceries
+grocery delivery,Groceries
+online grocery,Groceries
+fresh vegetables,Groceries
+eggs milk bread,Groceries
+monthly grocery,Groceries
+JioMart order,Groceries
+Dunzo groceries,Groceries
+local market,Groceries
+wholesale market,Groceries
+ration shop,Groceries
+pulses grains,Groceries
+cooking oil,Groceries
+spices masala,Groceries
+paneer tofu,Groceries
+Swiggy food,Dining Out
+food order online,Dining Out
+takeaway food,Dining Out
+parcel food,Dining Out
+hotel breakfast,Dining Out
+office lunch,Dining Out
+pizza delivery,Dining Out
+burger meal,Dining Out
+noodles order,Dining Out
+thali restaurant,Dining Out
+ice cream parlour,Dining Out
+bakery purchase,Dining Out
+coffee shop,Dining Out
+tea snacks,Dining Out
+fast food,Dining Out
+house EMI,Housing (Rent/Mortgage)
+housing society,Housing (Rent/Mortgage)
+apartment maintenance,Housing (Rent/Mortgage)
+flat maintenance,Housing (Rent/Mortgage)
+building charges,Housing (Rent/Mortgage)
+water tank charges,Housing (Rent/Mortgage)
+security deposit,Housing (Rent/Mortgage)
+rental agreement,Housing (Rent/Mortgage)
+owner payment,Housing (Rent/Mortgage)
+co-living rent,Housing (Rent/Mortgage)
+auto fare,Transportation
+cab fare,Transportation
+rickshaw fare,Transportation
+taxi charge,Transportation
+local bus,Transportation
+city bus pass,Transportation
+metro travel,Transportation
+train commute,Transportation
+bike fuel,Transportation
+car fuel,Transportation
+highway toll,Transportation
+vehicle service,Transportation
+tyre puncture,Transportation
+driving school,Transportation
+parking charges,Transportation
+electricity recharge,Utilities
+power bill,Utilities
+gas bill,Utilities
+water charges,Utilities
+broadband bill,Utilities
+WiFi bill,Utilities
+landline bill,Utilities
+mobile bill,Utilities
+internet pack,Utilities
+prepaid recharge,Utilities
+DTH monthly,Utilities
+set top box,Utilities
+OTT bundle,Utilities
+piped gas,Utilities
+sewage charges,Utilities
+hospital charges,Health Care
+medical bill,Health Care
+pharmacy bill,Health Care
+health checkup,Health Care
+OPD visit,Health Care
+IPD admission,Health Care
+surgery expense,Health Care
+ambulance charges,Health Care
+mental health therapy,Health Care
+dietitian consultation,Health Care
+lab report,Health Care
+X-ray scan,Health Care
+MRI charges,Health Care
+ayurvedic treatment,Health Care
+homeopathy,Health Care
+cinema tickets,Entertainment
+OTT subscription,Entertainment
+music streaming,Entertainment
+podcast app,Entertainment
+gaming app,Entertainment
+board games,Entertainment
+sports ticket,Entertainment
+gym class,Entertainment
+dance class,Entertainment
+comedy show,Entertainment
+web series binge,Entertainment
+travel tour,Entertainment
+holiday package,Entertainment
+weekend trip,Entertainment
+theme park,Entertainment
+Amazon fashion,Shopping
+Flipkart electronics,Shopping
+Meesho clothes,Shopping
+lifestyle store,Shopping
+shoes purchase,Shopping
+bag purchase,Shopping
+watch purchase,Shopping
+sunglasses,Shopping
+perfume deodorant,Shopping
+cosmetics makeup,Shopping
+skincare product,Shopping
+home furnishing,Shopping
+curtains bedsheet,Shopping
+utensils cookware,Shopping
+mobile accessories,Shopping
+school fee,Education
+college admission,Education
+semester fee,Education
+university tuition,Education
+test prep,Education
+competitive exam,Education
+IIT coaching,Education
+NEET preparation,Education
+MBA course,Education
+language class,Education
+art class,Education
+music lesson,Education
+drawing class,Education
+cricket coaching,Education
+swimming class,Education
+mutual fund SIP,Savings
+gold savings,Savings
+sukanya samridhi,Savings
+savings account,Savings
+recurring deposit,Savings
+fixed deposit,Savings
+provident fund,Savings
+gratuity,Savings
+NSC investment,Savings
+post office savings,Savings
+vehicle insurance,Insurance
+home insurance,Insurance
+travel insurance,Insurance
+term plan,Insurance
+endowment plan,Insurance
+ULIP premium,Insurance
+accident cover,Insurance
+fire insurance,Insurance
+crop insurance,Insurance
+marine insurance,Insurance
