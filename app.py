@@ -152,7 +152,7 @@ from data_processing import (
 from frontend import (
     create_expense_pie_chart, create_income_expense_bar_chart,
     create_investment_growth_chart, create_expense_trend_chart,
-    create_savings_goal_progress_chart, create_candlestick_chart,
+    create_savings_goal_progress_chart,
     create_portfolio_allocation_chart, create_portfolio_pnl_chart,
     create_net_worth_gauge,
 )
