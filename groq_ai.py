@@ -1,20 +1,42 @@
 import os
+import os
 import json
 from groq import Groq
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-
 if not GROQ_API_KEY:
-    raise ValueError("The GROQ_API_KEY environment variable is not set.")
+    raise ValueError("GROQ_API_KEY environment variable is not set.")
 
 client = Groq(api_key=GROQ_API_KEY)
+
+CANDIDATE_MODELS = [
+    "llama-3.3-70b-versatile",   
+    "llama3-70b-8192",           
+    "llama-3.1-8b-instant",      
+    "llama3-8b-8192",             
+]
+
+def _get_working_model() -> str:
+    for model in CANDIDATE_MODELS:
+        try:
+            client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": "hi"}],
+                max_tokens=1,
+            )
+            return model
+        except Exception:
+            continue
+    return "llama-3.1-8b-instant"  # last resort
+
+MODEL = _get_working_model()
 
 SYSTEM_PROMPT = """You are Artha, an expert AI financial advisor specializing in personal finance for Indian users.
 You give clear, concise, actionable advice on budgeting, saving, investing, and wealth management.
 Always frame your advice in the Indian financial context (rupees, Indian markets, FD/RD, SIP, PPF, NPS, etc.) when relevant.
 Be warm, practical, and direct. Avoid jargon unless you explain it."""
 
-MODEL = "llama-3.1-8b-instant"
+
 
 
 def _chat(messages: list[dict], max_tokens: int = 1024) -> str:
