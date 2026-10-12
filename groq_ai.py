@@ -15,7 +15,6 @@ Be warm, practical, and direct. Avoid jargon unless you explain it."""
 
 # ── AUTO-DETECT WORKING MODEL ─────────────────────────────────────────────────
 def _get_working_model() -> str:
-    """Fetch all models from your Groq key and pick the best available one."""
     preferred = [
         "llama-3.3-70b-versatile",
         "llama-3.3-70b-specdec",
@@ -27,18 +26,24 @@ def _get_working_model() -> str:
         "gemma2-9b-it",
         "gemma-7b-it",
     ]
+    # Words that identify non-chat models — skip these
+    skip_keywords = ["whisper", "tts", "vision", "tool", "guard", "embed", "distil"]
+
     try:
-        available = [m.id for m in client.models.list().data]
+        available = [
+            m.id for m in client.models.list().data
+            if not any(kw in m.id.lower() for kw in skip_keywords)
+        ]
+        # Try preferred list first
         for model in preferred:
             if model in available:
                 return model
-        # if none of the preferred match, just use first available
+        # Fall back to first remaining chat model
         if available:
             return available[0]
     except Exception:
         pass
-    return "llama3-8b-8192"   # absolute last resort
-
+    return "llama3-8b-8192"
 MODEL = _get_working_model()
 
 
