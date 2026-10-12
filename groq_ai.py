@@ -11,39 +11,34 @@ client = Groq(api_key=GROQ_API_KEY)
 SYSTEM_PROMPT = """You are Artha, an expert AI financial advisor specializing in personal finance for Indian users.
 You give clear, concise, actionable advice on budgeting, saving, investing, and wealth management.
 Always frame your advice in the Indian financial context (rupees, Indian markets, FD/RD, SIP, PPF, NPS, etc.) when relevant.
-Be warm, practical, and direct. Avoid jargon unless you explain it."""
+Be warm, practical, and direct."""
 
-# ── AUTO-DETECT WORKING MODEL ─────────────────────────────────────────────────
+# ── FIND WORKING MODEL BY ACTUALLY TESTING EACH ONE ──────────────────────────
+CANDIDATES = [
+    "llama-3.3-70b-versatile",
+    "llama-3.3-70b-specdec",
+    "llama3-70b-8192",
+    "llama-3.1-70b-versatile",
+    "llama-3.1-8b-instant",
+    "llama3-8b-8192",
+    "mixtral-8x7b-32768",
+    "gemma2-9b-it",
+    "gemma-7b-it",
+]
+
 def _get_working_model() -> str:
-    preferred = [
-        "llama-3.3-70b-versatile",
-        "llama-3.3-70b-specdec",
-        "llama3-70b-8192",
-        "llama-3.1-70b-versatile",
-        "llama-3.1-8b-instant",
-        "llama3-8b-8192",
-        "mixtral-8x7b-32768",
-        "gemma2-9b-it",
-        "gemma-7b-it",
-    ]
-    # Words that identify non-chat models — skip these
-    skip_keywords = ["whisper", "tts", "vision", "tool", "guard", "embed", "distil"]
+    for model in CANDIDATES:
+        try:
+            client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": "hi"}],
+                max_tokens=1,
+            )
+            return model   # ← this one works, use it
+        except Exception:
+            continue       # ← failed, try next
+    raise RuntimeError("No working Groq chat model found. Check your API key at console.groq.com")
 
-    try:
-        available = [
-            m.id for m in client.models.list().data
-            if not any(kw in m.id.lower() for kw in skip_keywords)
-        ]
-        # Try preferred list first
-        for model in preferred:
-            if model in available:
-                return model
-        # Fall back to first remaining chat model
-        if available:
-            return available[0]
-    except Exception:
-        pass
-    return "llama3-8b-8192"
 MODEL = _get_working_model()
 
 
