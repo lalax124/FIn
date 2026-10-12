@@ -13,31 +13,39 @@ You give clear, concise, actionable advice on budgeting, saving, investing, and 
 Always frame your advice in the Indian financial context (rupees, Indian markets, FD/RD, SIP, PPF, NPS, etc.) when relevant.
 Be warm, practical, and direct."""
 
-# ── FIND WORKING MODEL BY ACTUALLY TESTING EACH ONE ──────────────────────────
-CANDIDATES = [
-    "llama-3.3-70b-versatile",
-    "llama-3.3-70b-specdec",
-    "llama3-70b-8192",
-    "llama-3.1-70b-versatile",
-    "llama-3.1-8b-instant",
-    "llama3-8b-8192",
-    "mixtral-8x7b-32768",
-    "gemma2-9b-it",
-    "gemma-7b-it",
-]
-
+# ── FIND FIRST WORKING CHAT MODEL ─────────────────────────────────────────────
 def _get_working_model() -> str:
-    for model in CANDIDATES:
+    skip = ["whisper", "tts", "embed", "vision", "guard", "distil", "playai"]
+    try:
+        all_models = [m.id for m in client.models.list().data]
+        chat_models = [m for m in all_models if not any(s in m.lower() for s in skip)]
+    except Exception:
+        chat_models = []
+
+    for model in chat_models:
         try:
             client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": "hi"}],
                 max_tokens=1,
             )
-            return model   # ← this one works, use it
+            return model
         except Exception:
-            continue       # ← failed, try next
-    raise RuntimeError("No working Groq chat model found. Check your API key at console.groq.com")
+            continue
+
+    # absolute fallback — return first available even untested
+    if chat_models:
+        return chat_models[0]
+
+    # last resort — show what models exist to help debug
+    try:
+        all_ids = [m.id for m in client.models.list().data]
+        raise RuntimeError(f"No chat model worked. All models on your key: {all_ids}")
+    except RuntimeError:
+        raise
+    except Exception as e:
+        raise RuntimeError(f"Could not list models: {e}")
+
 
 MODEL = _get_working_model()
 
@@ -65,53 +73,56 @@ def generate_financial_adivice(query: str, financial_content: dict = None) -> st
         })
         messages.append({
             "role": "assistant",
-            "content": "Thank you for sharing your financial details. I'll use this context to give you personalised advice."
+            "content": "Thank you. I will use this context to give you personalised advice."
         })
     messages.append({"role": "user", "content": query})
     return _chat(messages, max_tokens=1024)
 
 
 def analyze_budget(income: float, expenses: dict) -> str:
-    budget_data = {"monthly_income_inr": income, "monthly_expenses_inr": expenses}
-    prompt = f"""Analyse the following monthly budget and provide a comprehensive breakdown.
+    prompt = f"""Analyse this monthly budget and provide a comprehensive breakdown.
 
-Budget Data:
-{json.dumps(budget_data, indent=2)}
+Monthly Income: Rs {income:,.0f}
+Monthly Expenses:
+{json.dumps(expenses, indent=2)}
 
 Please provide:
-1. **Overall Assessment** – Is this budget healthy? What's the savings rate?
-2. **Key Concerns** – Top 2-3 spending areas to watch
-3. **Quick Wins** – Immediate actions to improve the budget
-4. **50/30/20 Rule Check** – How does this compare to the ideal split?
-5. **One-Line Summary** – A concise verdict
+1. Overall Assessment - savings rate and health of budget
+2. Key Concerns - top 2-3 spending areas to watch
+3. Quick Wins - immediate actions to improve budget
+4. 50/30/20 Rule Check - how does this compare to ideal split
+5. One-Line Summary - concise verdict
 
-Keep it practical, specific, and actionable."""
+Keep it practical, specific and actionable."""
+
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": prompt}
+        {"role": "user",   "content": prompt},
     ]
     return _chat(messages, max_tokens=1024)
 
 
-def investement_advise(risk_involved: str, investment_horizon: str, current_investments: dict = None) -> str:
+def investement_advise(risk_involved: str, investment_horizon: str,
+                       current_investments: dict = None) -> str:
     data = {
-        "risk_tolerance": risk_involved,
-        "investment_horizon": investment_horizon,
-        "current_investments": current_investments or {}
+        "risk_tolerance":       risk_involved,
+        "investment_horizon":   investment_horizon,
+        "current_investments":  current_investments or {},
     }
-    prompt = f"""Provide personalised investment advice based on the following profile:
+    prompt = f"""Provide personalised investment advice based on this profile:
 {json.dumps(data, indent=2)}
 
 Cover:
-1. Recommended asset allocation (% in equity, debt, gold, etc.)
-2. Specific investment instruments suitable for this profile (SIP, PPF, NPS, FD, etc.)
+1. Recommended asset allocation (equity, debt, gold %)
+2. Specific instruments suitable for this profile (SIP, PPF, NPS, FD, etc.)
 3. Estimated expected returns
 4. Key risks to be aware of
 5. First concrete step to take
 
 Be specific and actionable."""
+
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": prompt}
+        {"role": "user",   "content": prompt},
     ]
     return _chat(messages, max_tokens=1024)
